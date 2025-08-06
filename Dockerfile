@@ -1,13 +1,10 @@
-# Etapa base: Java runtime
-FROM eclipse-temurin:17-jre as runtime
-
+FROM registry.access.redhat.com/ubi8/openjdk-17:1.13 AS build
+USER root
 WORKDIR /app
+COPY . .
+RUN mvn clean package -Dquarkus.package.type=uber-jar
 
-# Copiamos la app empacada por Quarkus
-COPY target/quarkus-app/lib/ ./lib/
-COPY target/quarkus-app/*.jar ./
-COPY target/quarkus-app/app/ ./app/
-COPY target/quarkus-app/quarkus/ ./quarkus/
-
-# Comando para ejecutar
-CMD ["java", "-jar", "quarkus-run.jar"]
+FROM registry.access.redhat.com/ubi8/openjdk-17:1.13
+WORKDIR /app
+COPY --from=build /app/target/*-runner.jar /app/app.jar
+CMD ["java","-Dquarkus.http.port=8080" ,"-jar", "app.jar"]
